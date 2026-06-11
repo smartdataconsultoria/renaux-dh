@@ -218,15 +218,6 @@ html,body{height:100%;font-family:'Poppins',sans-serif;background:var(--navy);co
       </button>
 
       <div class="sb-divider"></div>
-      <div class="sb-label">DASHBOARDS</div>
-      <div id="sb-categorias"></div>
-
-      <div class="sb-divider"></div>
-      <div class="sb-label">ATALHOS</div>
-      <button class="sb-item" onclick="scrollToArquivos()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-        Arquivos
-      </button>
     </div>
 
     <!-- MAIN -->
@@ -279,33 +270,6 @@ html,body{height:100%;font-family:'Poppins',sans-serif;background:var(--navy);co
         </div>
         <div class="lanc-arrow">
           <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
-        </div>
-      </div>
-
-      <!-- DASHBOARDS -->
-      <div class="section-hd">
-        <div>
-          <div class="section-title-txt">Dashboards Power BI</div>
-          <div class="section-sub">Análises e indicadores do período.</div>
-        </div>
-      </div>
-      <div class="dash-grid" id="dash-grid">
-        <div class="empty-state">
-          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="6" width="36" height="36" rx="6"/><path d="M16 32V20M24 32V16M32 32V24"/></svg>
-          <p>Carregando dashboards...</p>
-        </div>
-      </div>
-
-      <!-- ARQUIVOS -->
-      <div id="arquivos-section">
-        <div class="section-hd">
-          <div>
-            <div class="section-title-txt">Arquivos</div>
-            <div class="section-sub">Planilhas e documentos de referência.</div>
-          </div>
-        </div>
-        <div class="arq-grid" id="arq-grid">
-          <div class="empty-state" style="grid-column:1/-1"><p>Carregando...</p></div>
         </div>
       </div>
 
@@ -480,28 +444,26 @@ async function entrarApp(){
     carregarAdmin().catch(function(){});
   }
 
-  await carregarDashboards();
-  await carregarArquivos();
   await carregarStats();
 }
 
 // ── STATS ─────────────────────────────────────────────────────────
 async function carregarStats(){
+  document.getElementById('stats-row').style.display = '';
   try {
     var meses = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
     var mes = meses[new Date().getMonth()];
     var ano = new Date().getFullYear();
     var [rt, rf, rh, ra] = await Promise.all([
-      sb.from('treinamentos').select('id', {count:'exact'}).eq('ano', ano).eq('mes', mes),
-      sb.from('faltas').select('id', {count:'exact'}).eq('ano', ano).eq('mes', mes),
-      sb.from('hcp_vagas').select('id', {count:'exact'}).eq('periodo_ano', ano).eq('periodo_mes', mes),
-      sb.from('colaboradores').select('matricula', {count:'exact'}).eq('situacao', 'ATIVO').gte('data_admissao', ano + '-01-01')
+      sb.from('treinamentos').select('id', {count:'exact', head:true}).eq('ano', ano).eq('mes', mes),
+      sb.from('faltas').select('id', {count:'exact', head:true}).eq('ano', ano).eq('mes', mes),
+      sb.from('hcp_vagas').select('id', {count:'exact', head:true}).eq('periodo_ano', ano).eq('periodo_mes', mes),
+      sb.from('colaboradores').select('matricula', {count:'exact', head:true}).eq('situacao', 'ATIVO').gte('data_admissao', ano + '-01-01')
     ]);
-    document.getElementById('stat-treinamentos').textContent = rt.count || 0;
-    document.getElementById('stat-faltas').textContent = rf.count || 0;
-    document.getElementById('stat-hcp').textContent = rh.count || 0;
-    document.getElementById('stat-admissoes').textContent = ra.count || 0;
-    document.getElementById('stats-row').style.display = '';
+    document.getElementById('stat-treinamentos').textContent = rt.count ?? '—';
+    document.getElementById('stat-faltas').textContent = rf.count ?? '—';
+    document.getElementById('stat-hcp').textContent = rh.count ?? '—';
+    document.getElementById('stat-admissoes').textContent = ra.count ?? '—';
   } catch(e){ console.warn('stats', e); }
 }
 
