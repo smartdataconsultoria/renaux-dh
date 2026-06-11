@@ -145,7 +145,7 @@ tbody tr:hover td{background:rgba(200,146,42,.02)}
           </div>
           <div class="actions">
             <button class="btn-save" id="btn-hcp" data-lbl="Salvar Vaga" onclick="salvarHcp()">Salvar Vaga</button>
-            <button class="btn-sec" onclick="limpar('hcp');_hcpEditId=null;var b=document.getElementById('btn-hcp');b.textContent='Salvar Vaga';b.setAttribute('data-lbl','Salvar Vaga');">Limpar</button>
+            <button class="btn-sec" onclick="limpar('hcp');_hcpEditId=null;_hcpEditPk=null;_hcpEditPkVal=null;var b=document.getElementById('btn-hcp');b.textContent='Salvar Vaga';b.setAttribute('data-lbl','Salvar Vaga');">Limpar</button>
           </div>
         </div>
         <div class="tbl-wrap">
@@ -543,11 +543,15 @@ var _hcpBusca='';
 var _hcpFiltroMes='';
 var _hcpFiltroAno='';
 var _hcpOrdem={col:'periodo_ano',asc:false};
-var _hcpEditId=null; // ID do registro em edição (null = novo)
+var _hcpEditId=null;
+var _hcpEditPk=null;
+var _hcpEditPkVal=null;
 
 function editarHcp(idx){
   var r=_hcpCache[idx];if(!r)return;
-  _hcpEditId=r.id;
+  _hcpEditId=r.id_pve||null;
+  _hcpEditPk='id_pve';
+  _hcpEditPkVal=r.id_pve;
   document.getElementById('hcp-mes').value=r.periodo_mes||'';
   document.getElementById('hcp-ano').value=r.periodo_ano||'';
   document.getElementById('hcp-idpve').value=r.id_pve||'';
@@ -570,16 +574,20 @@ function editarHcp(idx){
   toast('Registro carregado. Edite e clique em Atualizar.','');
 }
 
-async function delHcp(id){
+async function delHcp(idPve){
   if(!confirm('Excluir esta vaga?'))return;
-  var res=await db.from('hcp_vagas').delete().eq('id',id);
-  if(res.error){toast('Erro ao excluir.','err');}
-  else{toast('Excluído.','ok');_hcpEditId=null;carregarHcp();atualizarContadores();}
+  var res=await db.from('hcp_vagas').delete().eq('id_pve',idPve);
+  if(res.error){toast('Erro ao excluir: '+res.error.message,'err');}
+  else{toast('Excluído.','ok');_hcpEditId=null;_hcpEditPk=null;_hcpEditPkVal=null;carregarHcp();atualizarContadores();}
 }
 
 async function carregarHcp(){
-  var res=await db.from('hcp_vagas').select('id,periodo_mes,periodo_ano,id_pve,incluido_em,liberado_em,data_necessidade,data_assinatura_contrato,data_inicio_contrato,motivo,funcionario_substituido,funcionario_contratatado,departamento,regional,coordenador,coordenador_id,funcao,observacao').order('periodo_ano',{ascending:false});
-  if(res.error){console.warn('hcp erro',res.error);}
+  var res=await db.from('hcp_vagas').select('*').order('periodo_ano',{ascending:false});
+  if(res.error){
+    console.error('hcp erro',res.error);
+    document.getElementById('tbody-hcp').innerHTML='<tr><td colspan="17" class="empty" style="color:var(--danger)">Erro ao carregar: '+res.error.message+'</td></tr>';
+    return;
+  }
   _hcpCache=res.data||[];
   renderHcp();
 }
@@ -622,8 +630,8 @@ function renderHcp(){
       +'<td>'+H(r.funcao||'—')+'</td>'
       +'<td>'+H(r.observacao||'—')+'</td>'
       +'<td style="display:flex;gap:5px;align-items:center">'
-        +'<button class="btn-edit" onclick="editarHcp('+idx+')">✏</button>'
-        +'<button class="btn-del" onclick="delHcp('+r.id+')">🗑</button>'
+        +'<button class="btn-edit" onclick="editarHcp('+(_hcpCache.indexOf(r))+')">✏</button>'
+        +'<button class="btn-del" onclick="delHcp(\''+H(r.id_pve||'')+'\')">🗑</button>'
       +'</td>'
       +'</tr>';
   }).join(''):'<tr><td colspan="17" class="empty">Nenhum registro encontrado.</td></tr>';
@@ -1091,8 +1099,8 @@ async function salvarHcp(){
     observacao:document.getElementById('hcp-obs').value||null
   };
   var res;
-  if(_hcpEditId){
-    res=await db.from('hcp_vagas').update(payload).eq('id',_hcpEditId);
+  if(_hcpEditId && _hcpEditPk){
+    res=await db.from('hcp_vagas').update(payload).eq(_hcpEditPk,_hcpEditPkVal);
   } else {
     res=await db.from('hcp_vagas').insert(payload);
   }
@@ -1100,7 +1108,7 @@ async function salvarHcp(){
   if(res.error){toast('Erro: '+res.error.message,'err');}
   else{
     toast(_hcpEditId?'Vaga atualizada!':'Vaga salva!','ok');
-    _hcpEditId=null;
+    _hcpEditId=null;_hcpEditPk=null;_hcpEditPkVal=null;
     var btn=document.getElementById('btn-hcp');
     btn.textContent='Salvar Vaga';btn.setAttribute('data-lbl','Salvar Vaga');
     limpar('hcp');carregarHcp();atualizarContadores();
