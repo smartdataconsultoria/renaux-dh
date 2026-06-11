@@ -96,7 +96,7 @@ tbody tr:hover td{background:rgba(200,146,42,.02)}
       <span class="t-nome"><span>RENAUX</span> SERVICE</span>
     </a>
     <div class="t-right">
-      <a class="t-btn" href="./dashboard.html">&#8592; Voltar ao Portal</a>
+      <a class="t-btn" href="./index.html">&#8592; Voltar ao Portal</a>
       <span id="top-email"></span>
     </div>
   </div>
@@ -513,12 +513,10 @@ tbody tr:hover td{background:rgba(200,146,42,.02)}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
-var SB_AUTH_URL='https://rbahvyejqybajnufftio.supabase.co';
-var SB_AUTH_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJiYWh2eWVqcXliYWpudWZmdGlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNjA5MjIsImV4cCI6MjA4OTYzNjkyMn0.nUIo2CT3o41YL1TT8Hrp5kq-_ZS-bMMf-gvUMCEyYMw';
-var SB_DATA_URL='https://jjpnztfpusgtkuolvxvl.supabase.co';
-var SB_DATA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqcG56dGZwdXNndGt1b2x2eHZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMzgwOTksImV4cCI6MjA5MzkxNDA5OX0.2Jzr0FIr0_Vi4sncP8mLMDiMb6PvTLcuCw4F7jVklbc';
-var auth=supabase.createClient(SB_AUTH_URL,SB_AUTH_KEY);
-var db=supabase.createClient(SB_DATA_URL,SB_DATA_KEY);
+var SB_URL='https://jjpnztfpusgtkuolvxvl.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqcG56dGZwdXNndGt1b2x2eHZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMzgwOTksImV4cCI6MjA5MzkxNDA5OX0.2Jzr0FIr0_Vi4sncP8mLMDiMb6PvTLcuCw4F7jVklbc';
+var auth=supabase.createClient(SB_URL,SB_KEY);
+var db=auth; // mesmo cliente para auth e dados
 var MESES=['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtD(d){if(!d)return '—';var p=(d+'').split('T')[0].split('-');return p[2]+'/'+p[1]+'/'+p[0];}
@@ -639,7 +637,7 @@ async function carregarFaltas(){
   // Buscar todos os registros em páginas de 1000
   var todos=[];var from=0;var tamPag=1000;
   while(true){
-    var res=await db.from('faltas').select('id,ano,mes,data_inicio_falta,data_final_falta,matricula,regional_id,coordenador_id,status_falta,cid,detalhe_cid,escala_id,departamento,nome_colaborador,regional:regional_id(sigla),coordenador:coordenador_id(nome),escala:escala_id(codigo_escala)').order('ano',{ascending:false}).range(from,from+tamPag-1);
+    var res=await db.from('faltas').select('id,ano,mes,data_inicio_falta,data_final_falta,matricula,regional_id,coordenador_id,status_falta,cid,detalhe_cid,escala_id,departamento,nome_colaborador').order('ano',{ascending:false}).range(from,from+tamPag-1);
     if(res.error){console.warn('faltas erro',res.error);break;}
     todos=todos.concat(res.data||[]);
     if(!res.data||res.data.length<tamPag)break;
@@ -652,7 +650,7 @@ function renderAbs(){
   var dados=_absCache.filter(function(r){
     if(_absFiltroMes&&r.mes!==_absFiltroMes)return false;
     if(_absFiltroAno&&String(r.ano)!==String(_absFiltroAno))return false;
-    if(_absBusca){var txt=[r.ano,r.mes,r.matricula,r.status_falta,r.cid,r.detalhe_cid,r.departamento,r.nome_colaborador,r.regional?r.regional.sigla:'',r.coordenador?r.coordenador.nome:''].join(' ').toLowerCase();if(!txt.includes(_absBusca))return false;}
+    if(_absBusca){var txt=[r.ano,r.mes,r.matricula,r.status_falta,r.cid,r.detalhe_cid,r.departamento,r.nome_colaborador].join(' ').toLowerCase();if(!txt.includes(_absBusca))return false;}
     return true;
   });
   dados.sort(function(a,b){var va=a[_absOrdem.col]||'';var vb=b[_absOrdem.col]||'';if(va<vb)return _absOrdem.asc?-1:1;if(va>vb)return _absOrdem.asc?1:-1;return 0;});
@@ -666,14 +664,14 @@ function renderAbs(){
       +'<td>'+fmtD(r.data_inicio_falta)+'</td>'
       +'<td>'+fmtD(r.data_final_falta)+'</td>'
       +'<td>'+H(r.matricula||'—')+'</td>'
-      +'<td>'+H(r.regional?r.regional.sigla:'—')+'</td>'
-      +'<td>'+H(r.coordenador?r.coordenador.nome:'—')+'</td>'
+      +'<td>'+H(r.regional_id||'—')+'</td>'
+      +'<td>'+H(r.coordenador_id||'—')+'</td>'
       +'<td>'+H(r.departamento||'—')+'</td>'
       +'<td>'+H(r.nome_colaborador||'—')+'</td>'
       +'<td><span class="bdg '+bc+'">'+H(r.status_falta)+'</span></td>'
       +'<td>'+H(r.cid||'—')+'</td>'
       +'<td>'+H(r.detalhe_cid||'—')+'</td>'
-      +'<td>'+H(r.escala?r.escala.codigo_escala:'—')+'</td>'
+      +'<td>'+H(r.escala_id||'—')+'</td>'
       +'<td><button class="btn-del" onclick="del(\'faltas\','+r.id+',carregarFaltas)">🗑</button></td>'
       +'</tr>';
   }).join(''):'<tr><td colspan="14" class="empty">Nenhum registro.</td></tr>';
@@ -712,9 +710,9 @@ function exportarAbs(){
     'Ano':r.ano,'Mês':r.mes,
     'Dt. Início Falta':r.data_inicio_falta||'','Dt. Final Falta':r.data_final_falta||'',
     'Matrícula':r.matricula,
-    'Regional':r.regional?r.regional.sigla:'','Coordenador':r.coordenador?r.coordenador.nome:'',
+    'Regional_ID':r.regional_id||'','Coordenador_ID':r.coordenador_id||'',
     'Status Falta':r.status_falta,'CID':r.cid||'','Detalhe CID':r.detalhe_cid||'',
-    'Escala':r.escala?r.escala.codigo_escala:''
+    'Escala_ID':r.escala_id||''
   };});
   var ws=window.XLSX.utils.json_to_sheet(rows);
   ws['!cols']=[{wch:8},{wch:12},{wch:16},{wch:16},{wch:12},{wch:10},{wch:22},{wch:16},{wch:12},{wch:28},{wch:12}];
@@ -803,7 +801,7 @@ async function importarAbs(input){
 async function carregarCalendario(){var res=await db.from('calendario_dias_uteis').select('id,ano,mes,qtd_dias,escala:escala_id(codigo_escala)').order('ano',{ascending:false}).limit(60);var rows=res.data||[];document.getElementById('tbody-cal').innerHTML=rows.length?rows.map(function(r){return '<tr><td>'+r.ano+'</td><td>'+H(r.mes)+'</td><td>'+H(r.escala?r.escala.codigo_escala:'—')+'</td><td>'+r.qtd_dias+'</td><td><button class="btn-del" onclick="del(\'calendario_dias_uteis\','+r.id+',carregarCalendario)">🗑</button></td></tr>';}).join(''):'<tr><td colspan="5" class="empty">Nenhum registro.</td></tr>';}
 var _colCache=[];var _colFiltro='TODOS';var _colBusca='';var _colOrdem={col:'nome',asc:true};
 async function carregarColaboradores(){
-  var res=await db.from('colaboradores').select('matricula,nome,cargo,situacao,departamento,estado_departamento,data_admissao,data_desligamento,motivo_admissao,motivo_demissao,horario,regional_id,coordenador_id,escala_id,departamento_id,regional:regional_id(sigla),coordenador:coordenador_id(nome),escala:escala_id(codigo_escala)').order('nome');
+  var res=await db.from('colaboradores').select('matricula,nome_colaborador,cargo,situacao,departamento,data_admissao,data_desligamento,motivo_admissao,motivo_desligamento,horario,regional_id,coordenador_id,escala_id').order('nome_colaborador');
   if(res.error){console.warn('col erro',res.error);return;}
   _colCache=res.data||[];
   filtrarCol();
@@ -814,7 +812,7 @@ function filtrarCol(){
   var dados=_colCache.filter(function(r){
     if(_colFiltro!=='TODOS'&&r.situacao!==_colFiltro)return false;
     if(_colBusca){
-      var txt=[r.matricula,r.nome,r.cargo,r.departamento,r.situacao,r.motivo_admissao,r.motivo_demissao].join(' ').toLowerCase();
+      var txt=[r.matricula,r.nome_colaborador,r.cargo,r.departamento,r.situacao,r.motivo_admissao,r.motivo_desligamento].join(' ').toLowerCase();
       if(!txt.includes(_colBusca))return false;
     }
     return true;
@@ -828,18 +826,18 @@ function filtrarCol(){
     var idx=_colCache.indexOf(r);
     return '<tr style="cursor:pointer" onclick="editarColPorIndice('+idx+')">'
       +'<td>'+H(r.matricula)+'</td>'
-      +'<td>'+H(r.regional?r.regional.sigla:'—')+'</td>'
-      +'<td>'+H(r.coordenador?r.coordenador.nome:'—')+'</td>'
+      +'<td>'+H(r.regional_id||'—')+'</td>'
+      +'<td>'+H(r.coordenador_id||'—')+'</td>'
       +'<td>'+H(r.departamento||'—')+'</td>'
-      +'<td>'+H(r.nome||'—')+'</td>'
+      +'<td>'+H(r.nome_colaborador||'—')+'</td>'
       +'<td>'+H(r.cargo||'—')+'</td>'
-      +'<td>'+H(r.escala?r.escala.codigo_escala:'—')+'</td>'
+      +'<td>'+H(r.escala_id||'—')+'</td>'
       +'<td>'+H(r.horario||'—')+'</td>'
       +'<td>'+H(r.data_admissao?fmtD(r.data_admissao):'—')+'</td>'
       +'<td>'+H(r.motivo_admissao||'—')+'</td>'
       +'<td>'+bdg+'</td>'
       +'<td>'+H(r.data_desligamento?fmtD(r.data_desligamento):'—')+'</td>'
-      +'<td>'+H(r.motivo_demissao||'—')+'</td>'
+      +'<td>'+H(r.motivo_desligamento||'—')+'</td>'
       +'<td><button class="btn-del" onclick="event.stopPropagation();delColPorIndice('+idx+')">🗑</button></td>'
       +'</tr>';
   }).join(''):'<tr><td colspan="14" class="empty">Nenhum colaborador encontrado.</td></tr>';
@@ -850,18 +848,17 @@ function editarCol(r){
   if(typeof r==='string'){r=_colCache.find(function(c){return c.matricula===r;});}
   if(!r)return;
   document.getElementById('col-matricula').value=r.matricula||'';
-  document.getElementById('col-nome').value=r.nome||'';
+  document.getElementById('col-nome').value=r.nome_colaborador||'';
   document.getElementById('col-cargo').value=r.cargo||'';
   document.getElementById('col-horario').value=r.horario||'';
   document.getElementById('col-admissao').value=r.data_admissao||'';
   document.getElementById('col-desligamento').value=r.data_desligamento||'';
   document.getElementById('col-motivo-adm').value=r.motivo_admissao||'';
-  document.getElementById('col-motivo-dem').value=r.motivo_demissao||'';
+  document.getElementById('col-motivo-dem').value=r.motivo_desligamento||'';
   document.getElementById('col-situacao').value=r.situacao||'ATIVO';
   if(r.regional_id){var rEl=document.getElementById('col-regional');if(rEl)rEl.value=r.regional_id;}
   if(r.coordenador_id){var cEl=document.getElementById('col-coord');if(cEl)cEl.value=r.coordenador_id;}
   if(r.escala_id){var eEl=document.getElementById('col-escala');if(eEl)eEl.value=r.escala_id;}
-  if(r.departamento_id){var dEl=document.getElementById('col-depto');if(dEl)dEl.value=r.departamento_id;}
   var btn=document.getElementById('btn-col');
   btn.textContent='Atualizar Colaborador';
   btn.setAttribute('data-lbl','Atualizar Colaborador');
@@ -877,7 +874,7 @@ function exportarCol(){
     return true;
   });
   if(!dados.length){toast('Nenhum dado.','err');return;}
-  var rows=dados.map(function(r){return{'Matrícula':r.matricula,'Regional':r.regional?r.regional.sigla:'','Coordenador':r.coordenador?r.coordenador.nome:'','Departamento':r.departamento||'','Nome':r.nome||'','Cargo':r.cargo||'','Escala':r.escala?r.escala.codigo_escala:'','Horário':r.horario||'','Admissão':r.data_admissao||'','Motivo Admissão':r.motivo_admissao||'','Situação':r.situacao,'Desligamento':r.data_desligamento||'','Motivo Demissão':r.motivo_demissao||''};});
+  var rows=dados.map(function(r){return{'Matrícula':r.matricula,'Regional_ID':r.regional_id||'','Coordenador_ID':r.coordenador_id||'','Departamento':r.departamento||'','Nome':r.nome_colaborador||'','Cargo':r.cargo||'','Escala_ID':r.escala_id||'','Horário':r.horario||'','Admissão':r.data_admissao||'','Motivo Admissão':r.motivo_admissao||'','Situação':r.situacao,'Desligamento':r.data_desligamento||'','Motivo Desligamento':r.motivo_desligamento||''};});
   var ws=window.XLSX.utils.json_to_sheet(rows);
   ws['!cols']=[{wch:12},{wch:32},{wch:28},{wch:30},{wch:10},{wch:14},{wch:14},{wch:12},{wch:22},{wch:22}];
   var wb=window.XLSX.utils.book_new();
@@ -932,15 +929,15 @@ async function importarCol(input){
         if(dtAdm==='INVALIDA'){erros.push('Linha '+(i+2)+': Data de Admissão inválida');return;}
         if(dtDes==='INVALIDA'){erros.push('Linha '+(i+2)+': Data de Desligamento inválida');return;}
         payload.push({
-          matricula:mat,nome:nome,
+          matricula:mat,nome_colaborador:nome,
           regional_id:regId,coordenador_id:coordId,
-          departamento:deptoNome||null,departamento_id:deptoId,
+          departamento:deptoNome||null,
           cargo:String(r['Cargo']||'').trim()||null,
           escala_id:escId,
           horario:String(r['Horário']||r['Horario']||'').trim()||null,
           data_admissao:dtAdm,motivo_admissao:String(r['Motivo de Admissão']||r['Motivo Admissão']||'').trim()||null,
           situacao:situacao,
-          data_desligamento:dtDes||null,motivo_demissao:String(r['Motivo de Demissão']||r['Motivo Demissão']||'').trim()||null
+          data_desligamento:dtDes||null,motivo_desligamento:String(r['Motivo de Demissão']||r['Motivo Demissão']||r['Motivo Desligamento']||'').trim()||null
         });
       });
       if(erros.length){toast(erros.length+' erro(s): '+erros.slice(0,3).join(' | '),'err');return;}
@@ -1154,13 +1151,13 @@ async function salvarFalta(){
   else{toast('Falta salva!','ok');limpar('abs');carregarFaltas();atualizarContadores();}
 }
 async function salvarCalendario(){var mes=document.getElementById('cal-mes').value;var ano=parseInt(document.getElementById('cal-ano').value);var escId=parseInt(document.getElementById('cal-escala').value);var dias=parseInt(document.getElementById('cal-dias').value);if(!mes||!ano||!escId||!dias){toast('Preencha todos os campos.','err');return;}var res=await db.from('calendario_dias_uteis').upsert({ano:ano,mes:mes,escala_id:escId,qtd_dias:dias},{onConflict:'ano,mes,escala_id'});if(res.error){toast('Erro: '+res.error.message,'err');}else{toast('Salvo!','ok');document.getElementById('cal-mes').selectedIndex=0;document.getElementById('cal-dias').value='';carregarCalendario();}}
-async function salvarColaborador(){var mat=document.getElementById('col-matricula').value.trim();var nome=document.getElementById('col-nome').value.trim();if(!mat||!nome){toast('Matrícula e Nome são obrigatórios.','err');return;}setBtnLoad('btn-col',true);var res=await db.from('colaboradores').upsert({matricula:mat,nome:nome,cargo:document.getElementById('col-cargo').value||null,horario:document.getElementById('col-horario').value||null,departamento_id:parseInt(document.getElementById('col-depto').value)||null,regional_id:parseInt(document.getElementById('col-regional').value)||null,coordenador_id:parseInt(document.getElementById('col-coord').value)||null,escala_id:parseInt(document.getElementById('col-escala').value)||null,data_admissao:document.getElementById('col-admissao').value||null,data_desligamento:document.getElementById('col-desligamento').value||null,situacao:document.getElementById('col-situacao').value||'ATIVO',motivo_admissao:document.getElementById('col-motivo-adm').value||null,motivo_demissao:document.getElementById('col-motivo-dem').value||null},{onConflict:'matricula'});setBtnLoad('btn-col',false);if(res.error){toast('Erro: '+res.error.message,'err');}else{toast('Colaborador salvo!','ok');limpar('col');var btn=document.getElementById('btn-col');btn.textContent='Salvar Colaborador';btn.setAttribute('data-lbl','Salvar Colaborador');carregarColaboradores();atualizarContadores();}}
+async function salvarColaborador(){var mat=document.getElementById('col-matricula').value.trim();var nome=document.getElementById('col-nome').value.trim();if(!mat||!nome){toast('Matrícula e Nome são obrigatórios.','err');return;}setBtnLoad('btn-col',true);var depEl=document.getElementById('col-depto');var depNome=depEl.options[depEl.selectedIndex]?depEl.options[depEl.selectedIndex].text:'';var res=await db.from('colaboradores').upsert({matricula:mat,nome_colaborador:nome,cargo:document.getElementById('col-cargo').value||null,horario:document.getElementById('col-horario').value||null,departamento:depNome||null,regional_id:parseInt(document.getElementById('col-regional').value)||null,coordenador_id:parseInt(document.getElementById('col-coord').value)||null,escala_id:parseInt(document.getElementById('col-escala').value)||null,data_admissao:document.getElementById('col-admissao').value||null,data_desligamento:document.getElementById('col-desligamento').value||null,situacao:document.getElementById('col-situacao').value||'ATIVO',motivo_admissao:document.getElementById('col-motivo-adm').value||null,motivo_desligamento:document.getElementById('col-motivo-dem').value||null},{onConflict:'matricula'});setBtnLoad('btn-col',false);if(res.error){toast('Erro: '+res.error.message,'err');}else{toast('Colaborador salvo!','ok');limpar('col');var btn=document.getElementById('btn-col');btn.textContent='Salvar Colaborador';btn.setAttribute('data-lbl','Salvar Colaborador');carregarColaboradores();atualizarContadores();}}
 var _treCache=[];var _treBusca='';var _treFiltroMes='';var _treFiltroAno='';var _treOrdem={col:'ano',asc:false};
 
 async function carregarTreinamentos(){
   var todos=[];var from=0;var tamPag=1000;
   while(true){
-    var res=await db.from('treinamentos').select('id,ano,mes,data_treinamento,cliente,regional:regional_id(sigla),coordenador:coordenador_id(nome),analista,status,observacao').order('ano',{ascending:false}).range(from,from+tamPag-1);
+    var res=await db.from('treinamentos').select('id,ano,mes,data_treinamento,departamento,regional_id,coordenador_id,analista,status,observacao').order('ano',{ascending:false}).range(from,from+tamPag-1);
     if(res.error){console.warn('tre erro',res.error);break;}
     todos=todos.concat(res.data||[]);
     if(!res.data||res.data.length<tamPag)break;
@@ -1173,7 +1170,7 @@ function renderTre(){
   var dados=_treCache.filter(function(r){
     if(_treFiltroMes&&r.mes!==_treFiltroMes)return false;
     if(_treFiltroAno&&String(r.ano)!==String(_treFiltroAno))return false;
-    if(_treBusca){var txt=[r.ano,r.mes,r.cliente,r.analista,r.status,r.observacao,r.regional?r.regional.sigla:'',r.coordenador?r.coordenador.nome:''].join(' ').toLowerCase();if(!txt.includes(_treBusca))return false;}
+    if(_treBusca){var txt=[r.ano,r.mes,r.departamento,r.analista,r.status,r.observacao].join(' ').toLowerCase();if(!txt.includes(_treBusca))return false;}
     return true;
   });
   dados.sort(function(a,b){var va=a[_treOrdem.col]||'';var vb=b[_treOrdem.col]||'';if(va<vb)return _treOrdem.asc?-1:1;if(va>vb)return _treOrdem.asc?1:-1;return 0;});
@@ -1186,9 +1183,9 @@ function renderTre(){
       +'<td>'+H(r.ano||'—')+'</td>'
       +'<td>'+H(r.mes||'—')+'</td>'
       +'<td>'+fmtD(r.data_treinamento)+'</td>'
-      +'<td>'+H(r.cliente||'—')+'</td>'
-      +'<td>'+H(r.regional?r.regional.sigla:'—')+'</td>'
-      +'<td>'+H(r.coordenador?r.coordenador.nome:'—')+'</td>'
+      +'<td>'+H(r.departamento||'—')+'</td>'
+      +'<td>'+H(r.regional_id||'—')+'</td>'
+      +'<td>'+H(r.coordenador_id||'—')+'</td>'
       +'<td>'+H(r.analista||'—')+'</td>'
       +'<td>'+badge+'</td>'
       +'<td>'+H(r.observacao||'—')+'</td>'
@@ -1220,14 +1217,14 @@ function exportarTre(){
   var dados=_treCache.filter(function(r){
     if(_treFiltroMes&&r.mes!==_treFiltroMes)return false;
     if(_treFiltroAno&&String(r.ano)!==String(_treFiltroAno))return false;
-    if(_treBusca){var txt=[r.ano,r.mes,r.cliente,r.analista,r.status].join(' ').toLowerCase();if(!txt.includes(_treBusca))return false;}
+    if(_treBusca){var txt=[r.ano,r.mes,r.departamento,r.analista,r.status].join(' ').toLowerCase();if(!txt.includes(_treBusca))return false;}
     return true;
   });
   if(!dados.length){toast('Nenhum dado.','err');return;}
   var rows=dados.map(function(r){return{
     'Ano':r.ano,'Mês':r.mes,'Data':r.data_treinamento||'',
-    'Cliente':r.cliente||'','Regional':r.regional?r.regional.sigla:'',
-    'Coordenador':r.coordenador?r.coordenador.nome:'',
+    'Departamento':r.departamento||'','Regional_ID':r.regional_id||'',
+    'Coordenador_ID':r.coordenador_id||'',
     'Analista':r.analista||'','Status':r.status||'','Observação':r.observacao||''
   };});
   var ws=window.XLSX.utils.json_to_sheet(rows);
@@ -1277,7 +1274,7 @@ async function importarTre(input){
         payload.push({
           ano:ano,mes:mes,
           data_treinamento:dtTre,
-          cliente:String(r['Cliente (Departamento)']||r['Cliente']||'').trim()||null,
+          departamento:String(r['Cliente (Departamento)']||r['Departamento']||r['Cliente']||'').trim()||null,
           regional_id:mapReg[regSigla]||null,
           coordenador_id:coordObj?coordObj.id:null,
           analista:String(r['Analista']||'').trim()||null,
@@ -1312,7 +1309,7 @@ async function salvarTreinamento(){
   var cliNome=cliEl.options[cliEl.selectedIndex]?cliEl.options[cliEl.selectedIndex].text:'';
   var res=await db.from('treinamentos').insert({
     ano:ano,mes:mes,data_treinamento:data,
-    cliente:cliNome||null,
+    departamento:cliNome||null,
     regional_id:parseInt(document.getElementById('tre-regional').value)||null,
     coordenador_id:parseInt(document.getElementById('tre-coord').value)||null,
     analista:document.getElementById('tre-analista').value||null,
