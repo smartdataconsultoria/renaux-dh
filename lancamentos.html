@@ -69,6 +69,8 @@ tbody tr:hover td{background:rgba(200,146,42,.02)}
 .bdg-w{background:rgba(240,160,40,.12);color:var(--warn)}.bdg-gold{background:var(--gold-glow);color:var(--gold)}
 .btn-del{background:rgba(224,85,85,.08);border:1px solid rgba(224,85,85,.2);color:var(--danger);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:'Poppins',sans-serif}
 .btn-del:hover{background:rgba(224,85,85,.18)}
+.btn-edit{background:rgba(200,146,42,.08);border:1px solid rgba(200,146,42,.2);color:var(--gold);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:'Poppins',sans-serif}
+.btn-edit:hover{background:rgba(200,146,42,.2)}
 .tabs{display:flex;gap:3px;margin-bottom:18px;background:rgba(30,48,80,.4);border:1px solid var(--navy-border);border-radius:8px;padding:3px;width:fit-content}
 .tab{padding:6px 16px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;color:var(--muted);border:none;background:none;font-family:'Poppins',sans-serif;transition:all .2s}
 .tab.on{background:var(--gold-glow);color:var(--gold);font-weight:600}
@@ -104,11 +106,11 @@ tbody tr:hover td{background:rgba(200,146,42,.02)}
   <div class="layout">
     <div class="sidebar">
       <div class="sb-title">LANÇAMENTOS DH</div>
-      <button class="sb-btn on" onclick="abrir('hcp')" id="sb-hcp">HCP <span class="sb-cnt" id="cnt-hcp">0</span></button>
-      <button class="sb-btn" onclick="abrir('colaboradores')" id="sb-colaboradores">Colaboradores <span class="sb-cnt" id="cnt-colab">0</span></button>
-      <button class="sb-btn" onclick="abrir('absentes')" id="sb-absentes">Absenteísmo <span class="sb-cnt" id="cnt-abs">0</span></button>
-      <button class="sb-btn" onclick="abrir('departamentos')" id="sb-departamentos">Departamentos <span class="sb-cnt" id="cnt-deptos">0</span></button>
-      <button class="sb-btn" onclick="abrir('treinamentos')" id="sb-treinamentos">Treinamentos <span class="sb-cnt" id="cnt-tre">0</span></button>
+      <button class="sb-btn on" onclick="abrir('hcp')" id="sb-hcp">HCP</button>
+      <button class="sb-btn" onclick="abrir('colaboradores')" id="sb-colaboradores">Colaboradores</button>
+      <button class="sb-btn" onclick="abrir('absentes')" id="sb-absentes">Absenteísmo</button>
+      <button class="sb-btn" onclick="abrir('departamentos')" id="sb-departamentos">Departamentos</button>
+      <button class="sb-btn" onclick="abrir('treinamentos')" id="sb-treinamentos">Treinamentos</button>
       <button class="sb-btn" onclick="abrir('metas')" id="sb-metas">Metas</button>
     </div>
 
@@ -143,7 +145,7 @@ tbody tr:hover td{background:rgba(200,146,42,.02)}
           </div>
           <div class="actions">
             <button class="btn-save" id="btn-hcp" data-lbl="Salvar Vaga" onclick="salvarHcp()">Salvar Vaga</button>
-            <button class="btn-sec" onclick="limpar('hcp')">Limpar</button>
+            <button class="btn-sec" onclick="limpar('hcp');_hcpEditId=null;var b=document.getElementById('btn-hcp');b.textContent='Salvar Vaga';b.setAttribute('data-lbl','Salvar Vaga');">Limpar</button>
           </div>
         </div>
         <div class="tbl-wrap">
@@ -183,8 +185,9 @@ tbody tr:hover td{background:rgba(200,146,42,.02)}
               <th onclick="sortHcp('coordenador')" style="cursor:pointer">Coordenador ↕</th>
               <th onclick="sortHcp('funcao')" style="cursor:pointer">Função ↕</th>
               <th>Observação</th>
+              <th style="min-width:80px">Ações</th>
             </tr></thead>
-            <tbody id="tbody-hcp"><tr><td colspan="16" class="empty">Carregando...</td></tr></tbody>
+            <tbody id="tbody-hcp"><tr><td colspan="17" class="empty">Carregando...</td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -536,12 +539,46 @@ var _buscaTmr=null;
 async function buscarColab(){clearTimeout(_buscaTmr);_buscaTmr=setTimeout(async function(){var mat=document.getElementById('abs-mat').value.trim();var box=document.getElementById('abs-info');if(mat.length<3){box.style.display='none';return;}var res=await db.from('colaboradores').select('nome,cargo,escala_id,regional_id,coordenador_id').eq('matricula',mat).maybeSingle();var data=res.data;if(data){document.getElementById('abs-info-nome').textContent=data.nome;document.getElementById('abs-info-cargo').textContent=' · '+(data.cargo||'');box.style.display='';if(data.regional_id){var rEl=document.getElementById('abs-regional');if(rEl)rEl.value=data.regional_id;}if(data.coordenador_id){var cEl=document.getElementById('abs-coord');if(cEl)cEl.value=data.coordenador_id;}if(data.escala_id){var eEl=document.getElementById('abs-escala');if(eEl)eEl.value=data.escala_id;}}else{box.style.display='none';}},400);}
 async function atualizarContadores(){var mes=new Date().toLocaleString('pt-BR',{month:'long'}).toUpperCase();var ano=new Date().getFullYear();var r=await Promise.all([db.from('hcp_vagas').select('id',{count:'exact',head:true}).eq('periodo_ano',ano).eq('periodo_mes',mes),db.from('faltas').select('id',{count:'exact',head:true}).eq('ano',ano).eq('mes',mes),db.from('colaboradores').select('matricula',{count:'exact',head:true}).eq('situacao','ATIVO')]);document.getElementById('cnt-hcp').textContent=r[0].count||0;document.getElementById('cnt-abs').textContent=r[1].count||0;document.getElementById('cnt-colab').textContent=r[2].count||0;var treEl=document.getElementById('cnt-tre');if(treEl)treEl.textContent=_treCache.length||0;}
 var _hcpCache=[];
+var _hcpBusca='';
 var _hcpFiltroMes='';
 var _hcpFiltroAno='';
 var _hcpOrdem={col:'periodo_ano',asc:false};
+var _hcpEditId=null; // ID do registro em edição (null = novo)
+
+function editarHcp(idx){
+  var r=_hcpCache[idx];if(!r)return;
+  _hcpEditId=r.id;
+  document.getElementById('hcp-mes').value=r.periodo_mes||'';
+  document.getElementById('hcp-ano').value=r.periodo_ano||'';
+  document.getElementById('hcp-idpve').value=r.id_pve||'';
+  document.getElementById('hcp-incluido').value=r.incluido_em||'';
+  document.getElementById('hcp-liberado').value=r.liberado_em||'';
+  document.getElementById('hcp-necessidade').value=r.data_necessidade||'';
+  document.getElementById('hcp-assinatura').value=r.data_assinatura_contrato||'';
+  document.getElementById('hcp-inicio').value=r.data_inicio_contrato||'';
+  document.getElementById('hcp-motivo').value=r.motivo||'';
+  document.getElementById('hcp-depto').value=r.departamento||'';
+  document.getElementById('hcp-regional').value=r.regional||'';
+  if(r.coordenador_id){var cEl=document.getElementById('hcp-coord');if(cEl)cEl.value=r.coordenador_id;}
+  document.getElementById('hcp-funcao').value=r.funcao||'';
+  document.getElementById('hcp-subst').value=r.funcionario_substituido||'';
+  document.getElementById('hcp-contrat').value=r.funcionario_contratatado||'';
+  document.getElementById('hcp-obs').value=r.observacao||'';
+  var btn=document.getElementById('btn-hcp');
+  btn.textContent='Atualizar Vaga';btn.setAttribute('data-lbl','Atualizar Vaga');
+  document.getElementById('mod-hcp').scrollIntoView({behavior:'smooth'});
+  toast('Registro carregado. Edite e clique em Atualizar.','');
+}
+
+async function delHcp(id){
+  if(!confirm('Excluir esta vaga?'))return;
+  var res=await db.from('hcp_vagas').delete().eq('id',id);
+  if(res.error){toast('Erro ao excluir.','err');}
+  else{toast('Excluído.','ok');_hcpEditId=null;carregarHcp();atualizarContadores();}
+}
 
 async function carregarHcp(){
-  var res=await db.from('hcp_vagas').select('periodo_mes,periodo_ano,id_pve,incluido_em,liberado_em,data_necessidade,data_assinatura_contrato,data_inicio_contrato,motivo,funcionario_substituido,funcionario_contratatado,departamento,regional,coordenador,funcao,observacao').order('periodo_ano',{ascending:false});
+  var res=await db.from('hcp_vagas').select('id,periodo_mes,periodo_ano,id_pve,incluido_em,liberado_em,data_necessidade,data_assinatura_contrato,data_inicio_contrato,motivo,funcionario_substituido,funcionario_contratatado,departamento,regional,coordenador,coordenador_id,funcao,observacao').order('periodo_ano',{ascending:false});
   if(res.error){console.warn('hcp erro',res.error);}
   _hcpCache=res.data||[];
   renderHcp();
@@ -565,7 +602,8 @@ function renderHcp(){
   });
   document.getElementById('cnt-hcp-tbl').textContent=dados.length+' de '+_hcpCache.length+' registros';
   setTimeout(sincScrollHcp,100);
-  document.getElementById('tbody-hcp').innerHTML=dados.length?dados.map(function(r){
+  document.getElementById('tbody-hcp').innerHTML=dados.length?dados.map(function(r,i){
+    var idx=_hcpCache.indexOf(r);
     return '<tr>'
       +'<td>'+H(r.periodo_mes||'—')+'</td>'
       +'<td>'+H(r.periodo_ano||'—')+'</td>'
@@ -583,8 +621,12 @@ function renderHcp(){
       +'<td>'+H(r.coordenador||'—')+'</td>'
       +'<td>'+H(r.funcao||'—')+'</td>'
       +'<td>'+H(r.observacao||'—')+'</td>'
+      +'<td style="display:flex;gap:5px;align-items:center">'
+        +'<button class="btn-edit" onclick="editarHcp('+idx+')">✏</button>'
+        +'<button class="btn-del" onclick="delHcp('+r.id+')">🗑</button>'
+      +'</td>'
       +'</tr>';
-  }).join(''):'<tr><td colspan="16" class="empty">Nenhum registro encontrado.</td></tr>';
+  }).join(''):'<tr><td colspan="17" class="empty">Nenhum registro encontrado.</td></tr>';
 }
 function sortHcp(col){
   if(_hcpOrdem.col===col){_hcpOrdem.asc=!_hcpOrdem.asc;}else{_hcpOrdem.col=col;_hcpOrdem.asc=true;}
@@ -1029,7 +1071,7 @@ async function salvarHcp(){
   var coordEl=document.getElementById('hcp-coord');
   var coordId=parseInt(coordEl.value)||null;
   var coordNome=coordId?(coordEl.options[coordEl.selectedIndex].text||null):null;
-  var res=await db.from('hcp_vagas').insert({
+  var payload={
     periodo_mes:mes,
     periodo_ano:ano,
     id_pve:document.getElementById('hcp-idpve').value||null,
@@ -1047,10 +1089,22 @@ async function salvarHcp(){
     funcionario_substituido:document.getElementById('hcp-subst').value||null,
     funcionario_contratatado:document.getElementById('hcp-contrat').value||null,
     observacao:document.getElementById('hcp-obs').value||null
-  });
+  };
+  var res;
+  if(_hcpEditId){
+    res=await db.from('hcp_vagas').update(payload).eq('id',_hcpEditId);
+  } else {
+    res=await db.from('hcp_vagas').insert(payload);
+  }
   setBtnLoad('btn-hcp',false);
   if(res.error){toast('Erro: '+res.error.message,'err');}
-  else{toast('Vaga salva!','ok');limpar('hcp');carregarHcp();atualizarContadores();}
+  else{
+    toast(_hcpEditId?'Vaga atualizada!':'Vaga salva!','ok');
+    _hcpEditId=null;
+    var btn=document.getElementById('btn-hcp');
+    btn.textContent='Salvar Vaga';btn.setAttribute('data-lbl','Salvar Vaga');
+    limpar('hcp');carregarHcp();atualizarContadores();
+  }
 }
 function baixarModeloHcp(){
   if(!window.XLSX){toast('Biblioteca não carregada.','err');return;}
